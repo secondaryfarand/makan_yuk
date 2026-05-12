@@ -7,7 +7,7 @@ load_dotenv()
 
 app = FastAPI()
 
-
+handler = app
 
 DATABASE_URL = os.getenv("POSTGRES_URL")
 def get_engine():
