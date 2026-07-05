@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from sqlalchemy import create_engine
+from sqlalchemy import text
 import pandas as pd
 import os
 from dotenv import load_dotenv
@@ -64,7 +65,7 @@ def get_resep(limit: int = 10):
         # Mengambil 10 resep secara acak untuk tes
         query = f'SELECT title, ingredients FROM tb_recipe LIMIT {limit}'
         # df = pd.read_sql(query, engine)
-        df = pd.read_sql(query, get_engine())
+        df = pd.read_sql(text(query), get_engine())
         return df.to_dict(orient="records")
         # data = df.to_dict(orient="records")
         # return {
@@ -90,7 +91,7 @@ def cari_bahan(bahan: str, limit: int = 10):
         where_clause = " WHERE " + " AND ".join(conditions)
         query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
 
-        df = pd.read_sql(query, get_engine())
+        df = pd.read_sql(text(query), get_engine())
         df.columns = df.columns.str.strip() 
         
         return {
@@ -115,7 +116,7 @@ def filter_resep(category: str = None, waktu_max: int = None, limit: int = 10):
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
         query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
         
-        df = pd.read_sql(query, get_engine())
+        df = pd.read_sql(text(query), get_engine())
         df.columns = df.columns.str.strip()
         
         return {"status": "success", "results": df.to_dict(orient="records")}
@@ -127,7 +128,7 @@ def filter_resep(category: str = None, waktu_max: int = None, limit: int = 10):
 def get_rekomendasi():
     try:
         query = 'SELECT * FROM "tb_recipe" ORDER BY loves DESC LIMIT 50'
-        df = pd.read_sql(query, get_engine())
+        df = pd.read_sql(text(query), get_engine())
         df.columns = df.columns.str.strip()
         
         rekomendasi = df.sample(5).to_dict(orient="records")
