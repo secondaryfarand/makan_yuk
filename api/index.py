@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  
 from sqlalchemy import create_engine
 import pandas as pd
 import os
@@ -8,6 +9,14 @@ load_dotenv()
 app = FastAPI()
 
 handler = app
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],  
+)
 
 DATABASE_URL = os.getenv("POSTGRES_URL")
 def get_engine():
