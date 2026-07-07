@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy import text
 import pandas as pd
@@ -188,9 +189,51 @@ def get_recipe_by_food_type(category_id: int = None, limit: int = 10):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# @app.get("/api/health")
-# def health_check():
-#     return {"status": "ok", "message": "Backend Python berhasil jalan!"}
+# 6. GET details recipe from id
+@app.get("/api/recipe/details/{recipe_id}")
+def get_recipe_detail(recipe_id: int):
+    try:
+        query = f'SELECT * FROM "tb_recipe" WHERE id = {recipe_id} LIMIT 1'
+        df = pd.read_sql(text(query), get_engine())
+        # Jika resep tidak ditemukan di database
+        if df.empty:
+            raise HTTPException(status_code=404, detail="Resep tidak ditemukan")
+        df.columns = df.columns.str.strip()
+        recipe_data = df.to_dict(orient="records")[0]
+        
+        # --- LOGIKA MENGHITUNG TOTAL INGREDIENTS ---
+        # Mengasumsikan pemisah antar bahan adalah karakter koma (,)
+        ingredients_str = recipe_data.get("ingredients_list", "") or ""
+        # # Pecah string menjadi list dan bersihkan spasi kosong
+        ingredients_list = [i.strip() for i in ingredients_str.split(",") if i.strip()]
+        # total_ingredients = len(ingredients_list)
+        
+        # --- LOGIKA MENGHITUNG TOTAL STEPS ---
+        # Mengasumsikan pemisah antar langkah memasak adalah karakter koma (,) atau baris baru (\n)
+        # # Jika di database kamu dipisah dengan koma, ganti .split("\n") menjadi .split(",")
+        steps_str = recipe_data.get("steps", "") or ""
+        steps_list = [s.strip() for s in steps_str.split(",") if s.strip()]
+        # total_steps = len(steps_list)
+        
+        # Susun struktur response JSON yang rapi dan siap saji untuk frontend
+        return {
+            "status": "success",
+            "data": {
+                "id": recipe_data.get("id"),
+                "title": recipe_data.get("title"),
+                "ingredients": ingredients_str, # Mengembalikan string asli untuk diolah di frontend
+                "steps": steps_str,             # Mengembalikan string asli langkah memasak
+                "loves": recipe_data.get("loves", 0),
+                "total_ingredients": recipe_data.get("total_ingredients"),
+                "total_steps": recipe_data.get("total_steps"),
+                "estimated_time": recipe_data.get("estimated_time", 0)
+            }
+        }
+        
+    except HTTPException as http_err:
+        raise http_err
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/api/health")
 def health_check():
