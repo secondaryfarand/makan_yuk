@@ -105,18 +105,24 @@ def cari_bahan(bahan: str, limit: int = 10):
 
 # 3. GET by CATEGORY and EST. TIME
 @app.get("/api/recipe/filter")
-def filter_resep(keyword: str = None, waktu_max: int = None, limit: int = 10):
+def filter_resep(keyword: str = None, waktu_max: int = None, kalori_max: int = None, limit: int = 10):
     try:
         conditions = []
+        params = {}
         if keyword:
-            conditions.append(f"title ILIKE '%{keyword}%'")
+            conditions.append('lower("title") LIKE :keyword')
+            params["keyword"] = f"%{keyword.lower()}%"
         if waktu_max and waktu_max > 0:
-            conditions.append(f"estimated_time <= {waktu_max}")
+            conditions.append('"estimated_time" <= :waktu_max')
+            params["waktu_max"] = waktu_max            
+        if kalori_max and kalori_max > 0:
+            conditions.append('"estimated_calories" <= :kalori_max')
+            params["kalori_max"] = kalori_max
         
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
-        
-        df = pd.read_sql(text(query), get_engine())
+        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT :limit'
+        params["limit"] = limit
+        df = pd.read_sql(text(query), get_engine(), params=params)
         df.columns = df.columns.str.strip()
         
         return {"status": "success", "results": df.to_dict(orient="records")}
@@ -136,6 +142,38 @@ def get_rekomendasi():
         return {"status": "success", "results": rekomendasi}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+# 5. GET category 
+@app.get("/api/recipe/category")
+def category(category: str = None, limit: int = 10):
+    try:
+
+        # queryA = f'SELECT * FROM "tb_category"'
+        # queryA = f'SELECT * FROM "tb_category" WHERE category_name = {category}'
+        # queryA = f'SELECT * FROM "tb_category" WHERE category_name = "ayam"'
+        # queryA = f'SELECT * FROM "tb_recipe" WHERE title ILIKE "%{category}%"'
+        # a = pd.read_sql(text(queryA), get_engine())
+        # a.columns = a.columns.str.strip()
+        # print(a)
+
+        conditions = []
+        if category:
+            conditions.append(f"title ILIKE '%{category}%'")
+        
+        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
+        
+        df = pd.read_sql(text(query), get_engine())
+        df.columns = df.columns.str.strip()
+
+        # hasil = df.sample(limit).to_dict(orient="records")
+        return {"status": "success", "results": df.to_dict(orient="records")}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# @app.get("/api/health")
+# def health_check():
+#     return {"status": "ok", "message": "Backend Python berhasil jalan!"}
 
 @app.get("/api/health")
 def health_check():
