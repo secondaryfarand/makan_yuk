@@ -105,12 +105,12 @@ def cari_bahan(bahan: str, limit: int = 10):
 
 # 3. GET by CATEGORY and EST. TIME
 @app.get("/api/recipe/filter")
-def filter_resep(category: str = None, waktu_max: int = None, limit: int = 10):
+def filter_resep(keyword: str = None, waktu_max: int = None, limit: int = 10):
     try:
         conditions = []
-        if category:
-            conditions.append(f"title ILIKE '%{category}%'")
-        if waktu_max:
+        if keyword:
+            conditions.append(f"title ILIKE '%{keyword}%'")
+        if waktu_max and waktu_max > 0:
             conditions.append(f"estimated_time <= {waktu_max}")
         
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
