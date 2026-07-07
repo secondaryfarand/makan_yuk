@@ -124,6 +124,7 @@ def filter_resep(keyword: str = None, waktu_max: int = None, kalori_max: int = N
         params["limit"] = limit
         df = pd.read_sql(text(query), get_engine(), params=params)
         df.columns = df.columns.str.strip()
+        df = df.replace({pd.NA: None, float('nan'): None}) #tambahan
         
         return {"status": "success", "results": df.to_dict(orient="records")}
     except Exception as e:
@@ -136,6 +137,8 @@ def get_rekomendasi():
         query = 'SELECT * FROM "tb_recipe" ORDER BY loves DESC LIMIT 50'
         df = pd.read_sql(text(query), get_engine())
         df.columns = df.columns.str.strip()
+        df = df.replace({pd.NA: None, float('nan'): None}) #tambahan
+
         
         rekomendasi = df.sample(5).to_dict(orient="records")
         
@@ -144,29 +147,43 @@ def get_rekomendasi():
         return {"status": "error", "message": str(e)}
 
 # 5. GET category 
-@app.get("/api/recipe/category")
-def category(category: str = None, limit: int = 10):
+@app.get("/api/recipe/ingredients-category")
+def get_recipe_by_ingredient(category_id: int = None, limit: int = 10):
     try:
-
-        # queryA = f'SELECT * FROM "tb_category"'
-        # queryA = f'SELECT * FROM "tb_category" WHERE category_name = {category}'
-        # queryA = f'SELECT * FROM "tb_category" WHERE category_name = "ayam"'
-        # queryA = f'SELECT * FROM "tb_recipe" WHERE title ILIKE "%{category}%"'
-        # a = pd.read_sql(text(queryA), get_engine())
-        # a.columns = a.columns.str.strip()
-        # print(a)
-
         conditions = []
-        if category:
-            conditions.append(f"title ILIKE '%{category}%'")
-        
+        params = {"limit": limit}
+        if category_id:
+            conditions.append('"ingredient_category_id" = :category_id')
+            params["category_id"] = category_id
+            
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
+        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT :limit'
         
-        df = pd.read_sql(text(query), get_engine())
+        df = pd.read_sql(text(query), get_engine(), params=params)
         df.columns = df.columns.str.strip()
-
-        # hasil = df.sample(limit).to_dict(orient="records")
+        df = df.replace({pd.NA: None, float('nan'): None}) #tambahan
+        
+        df = df.sample(limit)
+        return {"status": "success", "results": df.to_dict(orient="records")}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    
+@app.get("/api/recipe/food-category")
+def get_recipe_by_food_type(category_id: int = None, limit: int = 10):
+    try:
+        conditions = []
+        params = {"limit": limit}
+        
+        if category_id:
+            conditions.append('"food_category_id" = :category_id')
+            params["category_id"] = category_id
+            
+        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+        query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT :limit'
+        
+        df = pd.read_sql(text(query), get_engine(), params=params)
+        df.columns = df.columns.str.strip()
+        df = df.sample(limit)
         return {"status": "success", "results": df.to_dict(orient="records")}
     except Exception as e:
         return {"status": "error", "message": str(e)}
