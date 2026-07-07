@@ -86,7 +86,7 @@ def cari_bahan(bahan: str, limit: int = 10):
         list_bahan = [b.strip() for b in bahan.split(",") if b.strip()]
         conditions = []
         for b in list_bahan:
-            conditions.append(f"\"ingredients_list\" ILIKE '%{b}%'")
+            conditions.append(f"(\"title\" ILIKE '%{b}%')")
         
         where_clause = " WHERE " + " AND ".join(conditions)
         query = f'SELECT * FROM "tb_recipe" {where_clause} LIMIT {limit}'
